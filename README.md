@@ -9,10 +9,10 @@ How to build the package :
 * To be completed later
 
 How to initialize the rpm database
-rpm --initdb --dbpath /home/webadm01/.rpm/rpmdb
+* rpm --initdb --dbpath /home/webadm01/.rpm/rpmdb
 
 How to install the rpm package
-rpm -ivh --dbpath /home/webadm01/.rpm/rpmdb --nodeps nginx-1.13-0.i686.rpm
+* rpm -ivh --dbpath /home/webadm01/.rpm/rpmdb --nodeps nginx-1.13-0.i686.rpm
 
 
 
