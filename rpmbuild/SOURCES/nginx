@@ -1,0 +1,78 @@
+#!/bin/sh
+NGINX_CMD="/home/USER01/nginx/sbin/nginx"
+NGINX_CONF="/home/USER01/nginx/etc/nginx.conf"
+RETVAL=0
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+nginx=${NGINX-/home/USER01/nginx/sbin/nginx}
+prog=nginx
+pidfile=${PIDFILE-/home/USER01/nginx/var/logs/nginx.pid}
+lockfile=${LOCKFILE-/home/USER01/nginx/var/logs/nginx}
+RETVAL=0
+STOP_TIMEOUT=${STOP_TIMEOUT-10}
+
+start() {
+   echo -n $"Starting $prog: "
+   daemon --pidfile=${pidfile} $nginx $OPTIONS
+   RETVAL=$?
+   echo
+   [ $RETVAL -eq 0 ] && touch ${lockfile}
+   return $RETVAL
+}
+
+stop() {
+   status -p ${pidfile} $nginx > /dev/null
+   if [[ $? = 0 ]]; then
+		echo -n $"Stopping $prog: "
+		killproc -p ${pidfile} -d ${STOP_TIMEOUT} $nginx
+   else
+		echo -n $"Stopping $prog: "
+		success
+   fi
+   RETVAL=$?
+   echo
+   [ $RETVAL = 0 ] && rm -f ${lockfile} ${pidfile}
+}
+
+reload() {
+    echo -n $"Reloading $prog: "
+    if ! $nginx -c $NGINX_CONF -t >&/dev/null; then
+        RETVAL=6
+        echo $"not reloading due to configuration syntax error"
+        failure $"not reloading $nginx due to configuration syntax error"
+    else
+        # Force LSB behaviour from killproc
+        LSB=1 killproc -p ${pidfile} $ -HUP
+        RETVAL=$?
+        if [ $RETVAL -eq 7 ]; then
+            failure $"nginx shutdown"
+        fi
+    fi
+    echo
+}
+
+case "$1" in
+   start)
+      start
+      ;;
+   stop)
+      stop
+      ;;
+  status)
+        status -p ${pidfile} $httpd
+	RETVAL=$?
+	;;
+   restart)
+      stop
+      start
+      ;;
+  force-reload|reload)
+        reload
+	;;
+   *)
+      echo "Usage: $0 {start|stop|restart|reload|force-reload}"
+      exit 1
+esac
+exit $RETVAL

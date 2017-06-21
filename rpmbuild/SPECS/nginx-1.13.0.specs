@@ -1,0 +1,238 @@
+%define 	_topdir			/home/webadm01/rpmbuild
+
+%define		_prefix			/home/webadm01/nginx
+%define		_exec_prefix		%{_prefix}
+%define 	_bindir			%{_exec_prefix}/bin
+%define		_sbindir		%{_exec_prefix}/sbin
+%define		_libexecdir		%{_exec_prefix}/libexec
+%define		_datadir		%{_prefix}/data
+%define		_sysconfdir		%{_prefix}/etc
+%define		_sharedstatedir		%{_prefix}/com
+%define		_localstatedir		%{_prefix}/var
+%define		_lib			lib
+%define		_libdir			%{_exec_prefix}/%{_lib}
+%define		_logdir			%{_localstatedir}/logs
+%define		_includedir		%{_prefix}/include
+%define		_infodir		%{_datadir}/info
+%define		_mandir			%{_datadir}/man
+%define		_tmpdir			%{_datadir}/tmp
+
+%define		_nginx_user		webadm01
+%define		_nginx_group		webprd
+
+%define		name		nginx
+%define 	version 	1.13
+%define 	release		0
+
+Name:		%{name}
+Version:	%{version}
+Release:	%{release}
+Summary:	Societe Generale NGINX package
+Group:		Applications/Engineering
+Source0:	www.nginx.org/download/nginx-1.13.0.tar.gz
+Source1:	nginx.conf
+Source2:	nginx
+Source3:	mime.types
+License:	BSD-like license
+URL:		http://www.nginx.org
+Vendor:		ITEC/ARC/LAB
+Packager:	farid.izem@socgen.com
+BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%{%{__id_u} -n}
+
+BuildRequires:	pcre-devel
+BuildRequires:	zlib-devel 
+BuildRequires:	krb5-devel
+BuildRequires:	libxslt-devel
+BuildRequires:	libxml2-devel
+BuildRequires:	gd-devel
+BuildRequires:	libpng-devel
+BuildRequires:	freetype-devel
+BuildRequires:	libgpg-error-devel
+BuildRequires:	GeoIP-devel
+
+Requires:	krb5-libs
+Requires:	openssl
+Requires:	zlib
+Requires:	GeoIP
+Requires:	GeoIP-Geolite-data
+Requires:	GeoIP-Geolite-data-extra
+
+%description
+nginx [engine x] is an HTTP and reverse proxy server, as well as
+a mail proxy server.
+
+%prep
+%setup -q -n %{name}-%{version}.%{release}
+
+%build
+./configure --prefix=%{_prefix} \
+	--sbin-path=%{_sbindir}/nginx \
+	--modules-path=%{_libexecdir} \
+	--conf-path=%{_sysconfdir}/nginx.conf \
+	--error-log-path=%{_logdir}/error.log \
+	--http-log-path=%{_logdir}/access.log \
+	--pid-path=%{_localstatedir}/nginx.pid \
+	--lock-path=%{_localstatedir}/nginx.lock \
+	--user=%{_nginx_user} \
+	--group=%{_nginx_group} \
+	--http-client-body-temp-path=%{_tmpdir}/client \
+	--http-proxy-temp-path=%{_tmpdir}/proxy \
+	--http-fastcgi-temp-path=%{_tmpdir}/fastcgi \
+	--http-uwsgi-temp-path=%{_tmpdir}/uwsgi \
+	--http-scgi-temp-path=%{_tmpdir}/scgi \
+	--with-select_module \
+	--with-poll_module \
+	--with-threads \
+	--with-file-aio \
+	--with-http_ssl_module \
+	--with-http_v2_module \
+	--with-http_realip_module \
+	--with-http_addition_module \
+	--with-http_xslt_module=dynamic \
+	--with-http_image_filter_module=dynamic \
+	--with-http_geoip_module=dynamic \
+	--with-http_sub_module \
+	--with-http_gunzip_module \
+	--with-http_gzip_static_module \
+	--with-http_auth_request_module \
+	--with-http_random_index_module \
+	--with-http_secure_link_module \
+	--with-http_degradation_module \
+	--with-http_slice_module \
+	--with-http_stub_status_module \
+	--with-stream \
+	--with-stream_ssl_module \
+	--with-stream_realip_module \
+	--with-stream_geoip_module \
+	--with-stream_ssl_preread_module \
+ 	--with-compat \
+	--with-cc=gcc \
+	--with-pcre \
+	--with-pcre-jit \
+	--with-debug
+
+%{__make} %{?_smp_mflags}
+
+%install
+%{__rm} -Rf $RPM_BUILD_ROOT
+%{__make} DESTDIR=$RPM_BUILD_ROOT install
+%{__install} -m 644 -p $RPM_SOURCE_DIR/nginx.conf \
+	$RPM_BUILD_ROOT%{_sysconfdir}/nginx.conf
+
+%{__mkdir} $RPM_BUILD_ROOT%{_sysconfdir}/conf.d
+%{__install} -m 644 -p $RPM_SOURCE_DIR/mime.types \
+	$RPM_BUILD_ROOT%{_sysconfdir}/conf.d/mime.types
+
+%{__mkdir_p} $RPM_BUILD_ROOT%{_prefix}/etc/init.d
+%{__install} -m 750 -p $RPM_SOURCE_DIR/nginx \
+	$RPM_BUILD_ROOT%{_prefix}/etc/init.d/nginx
+
+%{__mkdir_p} $RPM_BUILD_ROOT%{_datadir}
+%{__mkdir_p} $RPM_BUILD_ROOT%{_tmpdir}
+%{__mkdir_p} $RPM_BUILD_ROOT%{_tmpdir}/client
+%{__mkdir_p} $RPM_BUILD_ROOT%{_tmpdir}/proxy
+%{__mkdir_p} $RPM_BUILD_ROOT%{_tmpdir}/fastcgi
+%{__mkdir_p} $RPM_BUILD_ROOT%{_tmpdir}/uwsgi
+%{__mkdir_p} $RPM_BUILD_ROOT%{_tmpdir}/scgi
+
+%post
+USER01=webadm01
+sed -i "s|USER01|$USER01|" $RPM_BUILD_ROOT%{_sysconfdir}/nginx.conf
+sed -i "s|HOSTNAME|$HOSTNAME|" $RPM_BUILD_ROOT%{_sysconfdir}/nginx.conf
+sed -i "s|USER01|$USER01|g" $RPM_BUILD_ROOT%{_sysconfdir}/init.d/nginx
+
+%define sslkey %{_sysconfdir}/ssl.key/server.key
+%define sslcert %{_sysconfdir}/ssl.crt/server.crt
+%{__mkdir} $RPM_BUILD_ROOT%{_sysconfdir}/ssl.key 
+%{__mkdir} $RPM_BUILD_ROOT%{_sysconfdir}/ssl.crt
+%{__mkdir} $RPM_BUILD_ROOT%{_sysconfdir}/ssl.pass
+
+SERVICENAME=`hostname` 
+umask 077
+
+export PK_PASS=`openssl rand -base64 37`
+echo "$PK_PASS" >> $RPM_BUILD_ROOT%{_sysconfdir}/ssl.pass/ssl_password_file
+
+if [ ! -f %{sslkey} ]
+then
+	openssl genrsa -aes256 -out %{sslkey} -passout "env:PK_PASS" 4096
+fi
+
+if [ ! -f %{sslcert} ] ; then
+cat << EOF | openssl req -new -key %{sslkey} \
+	-x509 -days 365 -out %{sslcert} \
+	-passin "env:PK_PASS" -passout "env:PK_PASS" 2>/dev/null
+--
+FR
+Ile-De-France
+SOCIETE GENERALE
+RESG-GTS
+$SERVICENAME
+root@$SERVICENAME
+EOF
+fi
+
+%postun
+%{__rm} -rf %{_localstatedir}
+
+%clean
+%{__rm} -rf $RPM_BUILD_ROOT
+
+%files
+%attr(750,webadm01,webprd) %dir %{_sbindir}
+
+%defattr(550,webadm01,webprd,750)
+%{_sbindir}/nginx
+
+%attr(750,webadm01,webprd) %dir %{_sysconfdir}
+
+%defattr(640,webadm01,webprd,750)
+%config(noreplace) %{_sysconfdir}/fastcgi.conf
+%config(noreplace) %{_sysconfdir}/fastcgi.conf.default
+%config(noreplace) %{_sysconfdir}/fastcgi_params
+%config(noreplace) %{_sysconfdir}/fastcgi_params.default
+%config(noreplace) %{_sysconfdir}/koi-utf
+%config(noreplace) %{_sysconfdir}/koi-win
+%config(noreplace) %{_sysconfdir}/mime.types
+%config(noreplace) %{_sysconfdir}/mime.types.default
+%config(noreplace) %{_sysconfdir}/nginx.conf
+%config(noreplace) %{_sysconfdir}/nginx.conf.default
+%config(noreplace) %{_sysconfdir}/scgi_params
+%config(noreplace) %{_sysconfdir}/scgi_params.default
+%config(noreplace) %{_sysconfdir}/uwsgi_params
+%config(noreplace) %{_sysconfdir}/uwsgi_params.default
+%config(noreplace) %{_sysconfdir}/win-utf
+
+%attr(750,webadm01,webprd) %dir %{_sysconfdir}/init.d
+%defattr(750,webadm01,webprd,750)
+%{_sysconfdir}/init.d/nginx
+
+%attr(750,webadm01,webprd) %dir %{_sysconfdir}/conf.d
+%defattr(640,webadm01,webprd,750)
+%{_sysconfdir}/conf.d/mime.types
+
+%attr(750,webadm01,webprd) %dir %{_localstatedir}
+%attr(750,webadm01,webprd) %dir %{_localstatedir}/logs
+
+%attr(750,webadm01,webprd) %dir %{_datadir}
+%attr(750,webadm01,webprd) %dir %{_tmpdir}
+%attr(750,webadm01,webprd) %dir %{_tmpdir}/client
+%attr(750,webadm01,webprd) %dir %{_tmpdir}/proxy
+%attr(750,webadm01,webprd) %dir %{_tmpdir}/fastcgi
+%attr(750,webadm01,webprd) %dir %{_tmpdir}/uwsgi
+%attr(750,webadm01,webprd) %dir %{_tmpdir}/scgi
+
+%attr(750,webadm01,webprd) %dir %{_libexecdir}
+
+%defattr(750,webadm01,webprd,750)
+%{_libexecdir}/ngx_http_geoip_module.so
+%{_libexecdir}/ngx_http_image_filter_module.so
+%{_libexecdir}/ngx_http_xslt_filter_module.so
+
+%attr(750,webadm01,webprd) %dir %{_exec_prefix}/html
+
+%defattr(660,webadm01,webprd,750)
+%{_exec_prefix}/html/50x.html
+%{_exec_prefix}/html/index.html
+
+%changelog
