@@ -35,8 +35,8 @@ Source2:	nginx
 Source3:	mime.types
 License:	BSD-like license
 URL:		http://www.nginx.org
-Vendor:		ITEC/ARC/LAB
-Packager:	farid.izem@socgen.com
+Vendor:		FIZ/TEC/LAB
+Packager:	farid_izem@hotmail.com
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%{%{__id_u} -n}
 
 BuildRequires:	pcre-devel
@@ -165,8 +165,8 @@ cat << EOF | openssl req -new -key %{sslkey} \
 --
 FR
 Ile-De-France
-SOCIETE GENERALE
-RESG-GTS
+FIZ-TEC
+FIZ-TEC-LAB
 $SERVICENAME
 root@$SERVICENAME
 EOF
